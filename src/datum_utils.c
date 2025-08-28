@@ -849,3 +849,12 @@ const char *dynamic_hash_unit(double * const inout_hashrate){
 		return "Th/s";
 	}
 }
+
+void truncate_char_array(char* input) {
+	for (int i = 0; input[i] != '\0'; i++) {
+		if (input[i] == ' ') {
+			input[i] = '\0';
+			break;
+		}
+	}
+}
