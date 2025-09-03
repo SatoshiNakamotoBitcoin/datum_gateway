@@ -136,6 +136,7 @@ typedef struct {
 	char api_listen_addr[128];
 	int api_listen_port;
 	bool api_modify_conf;
+	bool api_allow_unsafe_digest;
 	json_t *config_json;
 	
 	int extra_block_submissions_count;

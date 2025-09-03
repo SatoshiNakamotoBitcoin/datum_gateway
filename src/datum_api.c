@@ -456,7 +456,12 @@ bool datum_api_check_admin_password_httponly(struct MHD_Connection * const conne
 	int ret;
 	
 	char * const username = MHD_digest_auth_get_username(connection);
-	const enum MHD_DigestAuthAlgorithm algo = datum_api_pick_digest_algo(connection);
+	enum MHD_DigestAuthAlgorithm algo;
+	if (datum_config.api_allow_unsafe_digest) {
+		algo = datum_api_pick_digest_algo(connection);
+	} else {
+		algo = MHD_DIGEST_ALG_SHA256;
+	}
 	const char * const realm = "DATUM Gateway";
 	if (username) {
 		ret = MHD_digest_auth_check2(connection, realm, username, datum_config.api_admin_password, 300, algo);
