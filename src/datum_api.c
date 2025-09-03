@@ -439,11 +439,11 @@ bool datum_api_check_admin_password_only(struct MHD_Connection * const connectio
 	return false;
 }
 
-static enum MHD_DigestAuthAlgorithm datum_api_pick_digest_algo(struct MHD_Connection * const connection, const bool nonce_is_stale) {
+static enum MHD_DigestAuthAlgorithm datum_api_pick_digest_algo(struct MHD_Connection * const connection) {
 	const char * const ua = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "User-Agent");
 	if (strstr(ua, "AppleWebKit/") && !(strstr(ua, "Chrome/") || strstr(ua, "Brave/") || strstr(ua, "Edge/"))) {
 		static bool safari_warned = false;
-		if (!(nonce_is_stale && safari_warned)) {
+		if (!(safari_warned)) {
 			DLOG_WARN("Detected login request from Apple Safari. For some reason, this browser only supports obsolete and insecure MD5 digest authentication. Login at your own risk!");
 			safari_warned = true;
 		}
@@ -456,9 +456,10 @@ bool datum_api_check_admin_password_httponly(struct MHD_Connection * const conne
 	int ret;
 	
 	char * const username = MHD_digest_auth_get_username(connection);
+	const enum MHD_DigestAuthAlgorithm algo = datum_api_pick_digest_algo(connection);
 	const char * const realm = "DATUM Gateway";
 	if (username) {
-		ret = MHD_digest_auth_check2(connection, realm, username, datum_config.api_admin_password, 300, MHD_DIGEST_ALG_AUTO);
+		ret = MHD_digest_auth_check2(connection, realm, username, datum_config.api_admin_password, 300, algo);
 		free(username);
 	} else {
 		ret = MHD_NO;
@@ -468,7 +469,6 @@ bool datum_api_check_admin_password_httponly(struct MHD_Connection * const conne
 		if (username && !nonce_is_stale) {
 			DLOG_DEBUG("Wrong password in HTTP authentication");
 		}
-		const enum MHD_DigestAuthAlgorithm algo = datum_api_pick_digest_algo(connection, nonce_is_stale);
 		struct MHD_Response * const response = auth_failure_response_creator();
 		ret = MHD_queue_auth_fail_response2(connection, realm, datum_config.api_csrf_token, response, nonce_is_stale ? MHD_YES : MHD_NO, algo);
 		MHD_destroy_response(response);
